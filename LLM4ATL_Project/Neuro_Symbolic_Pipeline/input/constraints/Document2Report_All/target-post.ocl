@@ -1,0 +1,32 @@
+-- Each invariant checks one copied value or one direct containment property.
+context Report
+inv ReportPreservesTitle:
+  Document.allInstances()->exists(d | self.title = d.title)
+
+context Report
+inv ReportPreservesAuthor:
+  Document.allInstances()->exists(d |
+    self.title = d.title and self.author = d.author
+  )
+
+context Report
+inv ReportPreservesSectionCount:
+  Document.allInstances()->exists(d |
+    self.title = d.title and self.sections->size() = d.sections->size()
+  )
+
+context Section
+inv SectionPreservesTitle:
+  Section__source.allInstances()->exists(s | self.title = s.title)
+
+context Section
+inv SectionPreservesContent:
+  Section__source.allInstances()->exists(s |
+    self.title = s.title and self.content = s.content
+  )
+
+context Section
+inv SectionPreservesOrder:
+  Section__source.allInstances()->exists(s |
+    self.title = s.title and self.order = s.order
+  )

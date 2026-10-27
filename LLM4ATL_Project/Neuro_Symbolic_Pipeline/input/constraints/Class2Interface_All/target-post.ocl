@@ -1,0 +1,44 @@
+-- Each invariant checks one observable transformation property.
+context Interface
+inv InterfaceHasName:
+  self.name <> ''
+
+context Interface
+inv InterfaceHasMethods:
+  self.methods->notEmpty()
+
+context Interface
+inv InterfacePreservesClassName:
+  Class.allInstances()->exists(c | self.name = c.name)
+
+context Interface
+inv InterfacePreservesMethodCount:
+  Class.allInstances()->exists(c |
+    self.name = c.name and self.methods->size() = c.methods->size()
+  )
+
+context Method
+inv MethodPreservesName:
+  Method__source.allInstances()->exists(m | self.name = m.name)
+
+context Method
+inv MethodPreservesReturnType:
+  Method__source.allInstances()->exists(m |
+    self.name = m.name and self.returnType = m.returnType
+  )
+
+context Method
+inv MethodPreservesParameterCount:
+  Method__source.allInstances()->exists(m |
+    self.name = m.name and self.parameters->size() = m.parameters->size()
+  )
+
+context Parameter
+inv ParameterPreservesName:
+  Parameter__source.allInstances()->exists(p | self.name = p.name)
+
+context Parameter
+inv ParameterPreservesType:
+  Parameter__source.allInstances()->exists(p |
+    self.name = p.name and self.type = p.type
+  )

@@ -1,0 +1,268 @@
+module CPL2SPL;
+create OUT : SPL from IN : CPL;
+
+helper context CPL!NodeContainer def: statement() : CPL!Node =
+    if self.contents.oclIsUndefined() then
+        OclUndefined
+    else
+        if self.contents.oclIsKindOf(CPL!NodeContainer) then
+        self.contents.statement()
+    else
+        self.contents
+    endif
+    endif;
+
+helper context CPL!Element def: locations() : Set(CPL!Location) =
+    if self.oclIsKindOf(CPL!Location) then
+        Set{self}
+    else
+        Set{}
+    endif;
+
+helper context CPL!Proxy def: isSimple() : Boolean =
+    (((self.busy.oclIsUndefined() and self.noAnswer.oclIsUndefined()) and self.redirection.oclIsUndefined()) and (self.failure.oclIsUndefined() and self.default.oclIsUndefined()));
+
+rule CPL2Program {
+    from
+        c : CPL!CPL
+    to
+        p : SPL!Program (
+            service <- s
+        ),
+        s : SPL!Service (
+            name <- 'CPL',
+            declarations <- c.subActions,
+            sessions <- c.incoming
+        )
+}
+
+rule SubAction2Function {
+    from
+        sa : CPL!SubAction
+    to
+        f : SPL!LocalFunctionDeclaration (
+            name <- sa.id,
+            returnType <- rt,
+            statements <- sa.statement()
+        ),
+        rt : SPL!SimpleType (
+            type <- #void
+        )
+}
+
+rule Incoming2Method {
+    from
+        i : CPL!Incoming
+    to
+        m : SPL!Method (
+            type <- rt,
+            direction <- #"in",
+            methodName <- mn,
+            statements <- i.statement()
+        ),
+        rt : SPL!SimpleType (
+            type <- #void
+        ),
+        mn : SPL!SIPMethodName (
+            name <- #INVITE
+        )
+}
+
+rule Proxy2Return {
+    from
+        p : CPL!Proxy (
+            p.isSimple()
+        )
+    to
+        r : SPL!ReturnStat (
+            returnedValue <- f
+        ),
+        f : SPL!FunctionCallExp (
+            functionCall <- call
+        ),
+        call : SPL!FunctionCall (
+            function <- fd
+        ),
+        fd : SPL!RemoteFunctionDeclaration (
+            name <- 'proxy',
+            returnType <- rt,
+            functionLocation <- #remote
+        ),
+        rt : SPL!SimpleType (
+            type <- #response
+        )
+}
+
+rule Proxy2Select {
+    from
+        p : CPL!Proxy (
+            not p.isSimple()
+        )
+    to
+        s : SPL!SelectStat (
+            matchedExp <- f,
+            selectCases <- Set{p.busy, p.noAnswer, p.redirection, p.failure},
+            selectDefault <- p.default
+        ),
+        f : SPL!FunctionCallExp (
+            functionCall <- call
+        ),
+        call : SPL!FunctionCall (
+            function <- fd
+        ),
+        fd : SPL!RemoteFunctionDeclaration (
+            name <- 'proxy',
+            returnType <- rt,
+            functionLocation <- #remote
+        ),
+        rt : SPL!SimpleType (
+            type <- #response
+        )
+}
+
+rule Busy2SelectCase {
+    from
+        b : CPL!Busy
+    to
+        sc : SPL!SelectCase (
+            values <- c,
+            statements <- b.statement()
+        ),
+        c : SPL!ResponseConstant (
+            response <- r
+        ),
+        r : SPL!ClientErrorResponse (
+            errorKind <- #BUSY_HERE
+        )
+}
+
+rule NoAnswer2SelectCase {
+    from
+        na : CPL!NoAnswer
+    to
+        sc : SPL!SelectCase (
+            values <- c,
+            statements <- na.statement()
+        ),
+        c : SPL!ResponseConstant (
+            response <- r
+        ),
+        r : SPL!ClientErrorResponse (
+            errorKind <- #REQUEST_TIMEOUT
+        )
+}
+
+rule Redirection2SelectCase {
+    from
+        rd : CPL!Redirection
+    to
+        sc : SPL!SelectCase (
+            values <- c,
+            statements <- rd.statement()
+        ),
+        c : SPL!ResponseConstant (
+            response <- r
+        ),
+        r : SPL!RedirectionErrorResponse (
+            errorKind <- #MULTIPLE_CHOICES
+        )
+}
+
+rule Default2SelectDefault {
+    from
+        d : CPL!Default
+    to
+        sd : SPL!SelectDefault (
+            statements <- d.statement()
+        )
+}
+
+rule SubCall2Return {
+    from
+        sc : CPL!SubCall
+    to
+        r : SPL!ReturnStat (
+            returnedValue <- f
+        ),
+        f : SPL!FunctionCallExp (
+            functionCall <- call
+        ),
+        call : SPL!FunctionCall (
+            function <- CPL!SubAction.allInstances()->select(e | (e.id = sc.ref))->first()
+        )
+}
+
+rule Redirect2Return {
+    from
+        r : CPL!Redirect
+    to
+        ret : SPL!ReturnStat (
+            returnedValue <- f
+        ),
+        f : SPL!WithExp (
+            exp <- ce,
+            msgFields <- mf
+        ),
+        ce : SPL!ConstantExp (
+            value <- rc
+        ),
+        rc : SPL!ResponseConstant (
+            response <- rresp
+        ),
+        rresp : SPL!RedirectionErrorResponse (
+            errorKind <- #MOVED_TEMPORARILY
+        ),
+        mf : SPL!HeadedMessageField (
+            headerId <- 'contact',
+            exp <- thisModule.Location2URIConstant(r.locations()->first())
+        )
+}
+
+rule AddressSwitch2SelectStat {
+    from
+        as : CPL!AddressSwitch
+    to
+        s : SPL!SelectStat (
+            matchedExp <- v,
+            selectCases <- as.addresses,
+            selectDefault <- as.otherwise
+        ),
+        v : SPL!SIPHeaderPlace (
+            header <- #TO
+        )
+}
+
+rule SwitchedAddress2SelectCase {
+    from
+        sa : CPL!SwitchedAddress
+    to
+        sc : SPL!SelectCase (
+            values <- c,
+            statements <- sa.statement()
+        ),
+        c : SPL!URIConstant (
+            uri <- sa.is
+        )
+}
+
+rule Otherwise2SelectDefault {
+    from
+        o : CPL!Otherwise
+    to
+        sd : SPL!SelectDefault (
+            statements <- o.statement()
+        )
+}
+
+lazy rule Location2URIConstant {
+    from
+        l : CPL!Location
+    to
+        ce : SPL!ConstantExp (
+            value <- uc
+        ),
+        uc : SPL!URIConstant (
+            uri <- l.url
+        )
+}
+

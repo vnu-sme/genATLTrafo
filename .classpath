@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+
+	<!-- ATL_Parser -->
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Parser/src/main/java"/>
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Parser/src/test/java"/>
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Parser/src/test/resources"/>
+
+	<!-- ATL_Tests -->
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Tests/src/main/java"/>
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Tests/src/main/resources"/>
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Tests/src/main/atl"/>
+	<classpathentry kind="src" path="LLM4ATL_neuro_symbolic/ATL_Tests/src/test/java"/>
+
+	<!-- Built module artifacts -->
+	<classpathentry kind="lib" path="LLM4ATL_neuro_symbolic/ATL_Parser/target/atl-parser-demo-1.0.0.jar"/>
+	<classpathentry kind="lib" path="LLM4ATL_neuro_symbolic/ATL_Tests/target/atl-project-1.0-SNAPSHOT.jar"/>
+
+	<classpathentry kind="output" path="LLM4ATL_neuro_symbolic/ATL_Parser/target/classes"/>
+</classpath>
