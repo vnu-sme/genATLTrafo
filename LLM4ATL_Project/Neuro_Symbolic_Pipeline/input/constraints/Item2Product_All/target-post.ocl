@@ -1,0 +1,24 @@
+-- Check copied and derived Product values independently.
+context Product
+inv ProductPreservesBasicFields:
+  Item.allInstances()->exists(i |
+    self.name = i.name and self.price = i.price and
+    self.description = i.description
+  )
+
+context Product
+inv ProductPreservesStockStatus:
+  Item.allInstances()->exists(i |
+    self.name = i.name and self.inStock = (i.quantity > 0)
+  )
+
+context Product
+inv ProductPreservesCategory:
+  Item.allInstances()->exists(i |
+    self.name = i.name and
+    self.category =
+      if i.type = 'Electronics' then 'Tech'
+      else if i.type = 'Clothing' then 'Apparel'
+      else 'General'
+      endif endif
+  )

@@ -1,0 +1,4 @@
+-- Use local source/target correspondences instead of one deeply nested query.
+context PetriNet
+inv PetriNetRetainsNamedStructure:
+  self.name <> '' and self.elements->notEmpty() and self.arcs->notEmpty()
