@@ -2,6 +2,7 @@
 
 This project presents a neuro-symbolic pipeline for generating ATL model transformations from metamodels and natural-language requirements, then progressively improving their correctness through structural checking, static analysis, and formal verification with violation-driven feedback.
 
+The main branch contains the finalized implementation of the proposed method presented in our paper.
 
 ## Pipeline Overview
 
